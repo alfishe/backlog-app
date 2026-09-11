@@ -68,7 +68,7 @@
           meta = with pkgs.lib; {
             description = "Cross-platform desktop app for Personal Backlog";
             homepage = "https://github.com/user/backlog-app";
-            license = licenses.mit;
+            license = licenses.gpl3Only;
             maintainers = [];
             platforms = platforms.linux ++ platforms.darwin;
           };

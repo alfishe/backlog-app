@@ -2,7 +2,8 @@
 name = "backlog-app"
 version = "0.1.0"
 description = "Cross-platform desktop app for Personal Backlog"
-authors = ["you"]
+license = "GPL-3.0-only"
+repository = "https://github.com/anthropics/backlog-app"
 edition = "2021"
 
 [lib]
