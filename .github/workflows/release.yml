@@ -1,0 +1,178 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v0.1.0)'
+        required: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS ARM
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            name: macos-arm64
+
+          # macOS x86_64 (Intel)
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            name: macos-x64
+
+          # Windows x86_64
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: windows-x64
+
+          # Windows ARM64
+          - platform: windows-latest
+            target: aarch64-pc-windows-msvc
+            name: windows-arm64
+
+          # Linux x86_64
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            name: linux-x64
+
+          # Linux ARM64
+          - platform: ubuntu-22.04
+            target: aarch64-unknown-linux-gnu
+            name: linux-arm64
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Install Linux ARM64 cross-compilation tools
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get install -y \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            libc6-dev-arm64-cross
+          echo "PKG_CONFIG_SYSROOT_DIR=/usr/aarch64-linux-gnu" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.event.inputs.version || github.ref_name }}
+          releaseName: 'Backlog ${{ github.event.inputs.version || github.ref_name }}'
+          releaseBody: |
+            Cross-platform desktop app for Personal Backlog.
+
+            ## Downloads
+            - **macOS ARM64**: `Backlog_*_aarch64.dmg`
+            - **macOS x64**: `Backlog_*_x64.dmg`
+            - **Windows x64**: `Backlog_*_x64-setup.exe` or `.msi`
+            - **Windows ARM64**: `Backlog_*_arm64-setup.exe`
+            - **Linux x64**: `backlog_*_amd64.deb` or `.AppImage`
+            - **Linux ARM64**: `backlog_*_arm64.deb`
+
+            ## Features
+            - Fully offline - no internet required
+            - Single markdown file as database
+            - Embedded HTTP server for API
+            - Cross-platform (Windows, macOS, Linux)
+          releaseDraft: true
+          prerelease: false
+          args: --target ${{ matrix.target }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backlog-${{ matrix.name }}
+          path: |
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.app
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.msi
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.deb
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.rpm
+          if-no-files-found: ignore
+
+  # NixOS build
+  nix-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Build with Nix
+        run: |
+          nix build .#default --print-build-logs
+
+      - name: Create Nix bundle
+        run: |
+          mkdir -p nix-bundle
+          cp -r result/* nix-bundle/ 2>/dev/null || true
+          # Create a simple wrapper script
+          cat > nix-bundle/install.sh << 'EOF'
+          #!/bin/bash
+          # Install backlog-app via Nix flake
+          echo "Installing backlog-app..."
+          nix profile install github:user/backlog-app
+          echo "Done! Run 'backlog-app' to start."
+          EOF
+          chmod +x nix-bundle/install.sh
+          tar -czvf backlog-nix-${{ github.ref_name }}.tar.gz nix-bundle
+
+      - name: Upload Nix artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backlog-nix
+          path: backlog-nix-*.tar.gz
+          if-no-files-found: ignore
+
+      - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: backlog-nix-*.tar.gz
+          draft: true
