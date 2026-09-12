@@ -52,6 +52,7 @@
 
           src = ./.;
           cargoRoot = "src-tauri";
+          buildAndTestSubdir = "src-tauri";
 
           cargoLock = {
             lockFile = ./src-tauri/Cargo.lock;
