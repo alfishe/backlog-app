@@ -24,7 +24,6 @@
           rustToolchain
           pkg-config
           nodejs_22
-          nodePackages.npm
         ];
 
         buildInputs = with pkgs; [
