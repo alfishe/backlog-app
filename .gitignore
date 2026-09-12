@@ -6,8 +6,6 @@ dist/
 target/
 src-tauri/target/
 
-# Generated icons (keep source app-icon.png)
-src-tauri/icons/
 
 # IDE
 .idea/
