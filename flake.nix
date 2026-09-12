@@ -23,7 +23,7 @@
         nativeBuildInputs = with pkgs; [
           rustToolchain
           pkg-config
-          nodejs_20
+          nodejs_22
           nodePackages.npm
         ];
 
