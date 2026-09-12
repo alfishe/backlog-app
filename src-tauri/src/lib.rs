@@ -1,4 +1,3 @@
-mod file_manager;
 mod server;
 mod state;
 
