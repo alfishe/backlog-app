@@ -23,12 +23,12 @@ jobs:
       matrix:
         include:
           # macOS ARM
-          - platform: macos-latest
+          - platform: macos-12
             target: aarch64-apple-darwin
             name: macos-arm64
 
           # macOS x86_64 (Intel)
-          - platform: macos-latest
+          - platform: macos-12
             target: x86_64-apple-darwin
             name: macos-x64
 
@@ -80,8 +80,6 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.event.inputs.version || github.ref_name }}
           releaseName: 'Backlog ${{ github.event.inputs.version || github.ref_name }}'
@@ -89,12 +87,11 @@ jobs:
             Cross-platform desktop app for Personal Backlog.
 
             ## Downloads
-            - **macOS ARM64**: `Backlog_*_aarch64.dmg`
-            - **macOS x64**: `Backlog_*_x64.dmg`
+            - **macOS ARM**: `Backlog_*_aarch64.dmg`
+            - **macOS Intel**: `Backlog_*_x64.dmg`
             - **Windows x64**: `Backlog_*_x64-setup.exe` or `.msi`
             - **Windows ARM64**: `Backlog_*_arm64-setup.exe`
             - **Linux x64**: `backlog_*_amd64.deb` or `.AppImage`
-            - **Linux ARM64**: `backlog_*_arm64.deb`
 
             ## Features
             - Fully offline - no internet required
