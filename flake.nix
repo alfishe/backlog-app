@@ -59,10 +59,6 @@
 
           inherit nativeBuildInputs buildInputs;
 
-          postPatch = ''
-            cd src-tauri
-          '';
-
           meta = with pkgs.lib; {
             description = "Cross-platform desktop app for Personal Backlog";
             homepage = "https://github.com/alfishe/backlog-app";
