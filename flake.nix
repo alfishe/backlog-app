@@ -23,7 +23,6 @@
         nativeBuildInputs = with pkgs; [
           rustToolchain
           pkg-config
-          nodejs_22
         ];
 
         buildInputs = with pkgs; [
@@ -52,6 +51,7 @@
           version = "0.1.0";
 
           src = ./.;
+          cargoRoot = "src-tauri";
 
           cargoLock = {
             lockFile = ./src-tauri/Cargo.lock;
@@ -59,8 +59,7 @@
 
           inherit nativeBuildInputs buildInputs;
 
-          # Build frontend first
-          preBuild = ''
+          postPatch = ''
             cd src-tauri
           '';
 
@@ -74,7 +73,8 @@
         };
 
         devShells.default = pkgs.mkShell {
-          inherit nativeBuildInputs buildInputs;
+          nativeBuildInputs = nativeBuildInputs ++ [ pkgs.nodejs_22 ];
+          inherit buildInputs;
 
           shellHook = ''
             echo "Backlog App development shell"
