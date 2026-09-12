@@ -157,7 +157,7 @@ jobs:
           #!/bin/bash
           # Install backlog-app via Nix flake
           echo "Installing backlog-app..."
-          nix profile install github:user/backlog-app
+          nix profile install github:alfishe/backlog-app
           echo "Done! Run 'backlog-app' to start."
           EOF
           chmod +x nix-bundle/install.sh

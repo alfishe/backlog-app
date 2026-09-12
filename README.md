@@ -1,6 +1,6 @@
 # Backlog App
 
-A native desktop wrapper for [Personal Backlog](https://github.com/anthropics/backlog) — bringing your task management fully offline.
+A native desktop wrapper for [Personal Backlog](https://github.com/alfishe/backlog) — bringing your task management fully offline.
 
 ## Why?
 
